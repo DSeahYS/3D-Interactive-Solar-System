@@ -1,4 +1,6 @@
 # 🌌 Interactive 3D Solar System Simulation - Ultimate Edition
+<img width="3391" height="1408" alt="image" src="https://github.com/user-attachments/assets/543932a0-80ea-4ec5-917a-49416d72b3dc" />
+
 
 A stunning, interactive 3D solar system simulation built with Three.js, featuring real astronomical data, advanced visual effects, and immersive user controls.
 
