@@ -1,4 +1,4 @@
-[![Website](https://img.shields.io/badge/Website-3-d-interactive-solar-system-blue)]([https://3-d-interactive-solar-system.vercel.app/)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit%20Site-blue)](https://3-d-interactive-solar-system.vercel.app/)
 
 🌌 Interactive 3D Solar System Simulation - Ultimate Edition
 <img width="3391" height="1408" alt="image" src="https://github.com/user-attachments/assets/543932a0-80ea-4ec5-917a-49416d72b3dc" />
