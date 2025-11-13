@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive 3D Solar System Simulation - Ultimate Edition</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Exo 2', 'Orbitron', 'Arial', sans-serif;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(79, 195, 247, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(129, 199, 132, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(255, 152, 0, 0.05) 0%, transparent 50%),
+                linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #000000 100%);
+            overflow: hidden;
+            color: white;
+            user-select: none;
+            position: relative;
+        }
+
+        /* Animated background stars */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, #eee, transparent),
+                radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.8), transparent),
+                radial-gradient(1px 1px at 90px 40px, #fff, transparent),
+                radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.6), transparent),
+                radial-gradient(2px 2px at 160px 30px, #ddd, transparent);
+            background-repeat: repeat;
+            background-size: 200px 100px;
+            animation: sparkle 20s linear infinite;
+            z-index: -1;
+        }
+
+        @keyframes sparkle {
+            from { transform: translateX(0); }
+            to { transform: translateX(-200px); }
+        }
+
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+        }
+
+        #controls-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(145deg, rgba(10, 15, 35, 0.95) 0%, rgba(26, 26, 46, 0.95) 100%);
+            border: 2px solid rgba(79, 195, 247, 0.4);
+            border-radius: 20px;
+            padding: 25px;
+            min-width: 340px;
+            backdrop-filter: blur(20px);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+            transform: translateZ(0);
+        }
+
+        .control-group {
+            margin-bottom: 25px;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            color: #4fc3f7;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            position: relative;
+        }
+
+        .control-label::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 40px;
+            height: 2px;
+            background: linear-gradient(90deg, #4fc3f7, transparent);
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        #speed-slider {
+            flex: 1;
+            height: 8px;
+            background: linear-gradient(to right, #1a1a2e, #16213e, #4fc3f7);
+            border-radius: 4px;
+            outline: none;
+            cursor: pointer;
+            -webkit-appearance: none;
+            position: relative;
+        }
+
+        #speed-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(45deg, #4fc3f7, #29b6f6);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 
+                0 4px 12px rgba(79, 195, 247, 0.4),
+                0 0 0 2px rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        #speed-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 
+                0 6px 20px rgba(79, 195, 247, 0.6),
+                0 0 0 4px rgba(79, 195, 247, 0.2);
+        }
+
+        .speed-buttons {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .speed-btn {
+            padding: 12px 8px;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+            border: 1px solid rgba(79, 195, 247, 0.3);
+            border-radius: 12px;
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .speed-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .speed-btn:hover::before {
+            left: 100%;
+        }
+
+        .speed-btn:hover, .speed-btn.active {
+            background: linear-gradient(145deg, #4fc3f7, #29b6f6);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 
+                0 8px 25px rgba(79, 195, 247, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        .toggle-controls {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .toggle-btn {
+            padding: 14px 10px;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+            border: 1px solid rgba(79, 195, 247, 0.3);
+            border-radius: 12px;
+            color: white;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .toggle-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .toggle-btn:hover::before {
+            left: 100%;
+        }
+
+        .toggle-btn.active {
+            background: linear-gradient(145deg, #4fc3f7, #29b6f6);
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 
+                0 6px 20px rgba(79, 195, 247, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        #info-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(145deg, rgba(10, 15, 35, 0.95) 0%, rgba(26, 26, 46, 0.95) 100%);
+            border: 2px solid rgba(79, 195, 247, 0.4);
+            border-radius: 20px;
+            padding: 25px;
+            min-width: 320px;
+            max-width: 360px;
+            backdrop-filter: blur(20px);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            max-height: 85vh;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .planet-info {
+            display: none;
+            animation: fadeInUp 0.8s ease;
+        }
+
+        .planet-info.active {
+            display: block;
+        }
+
+        @keyframes fadeInUp {
+            from { 
+                opacity: 0; 
+                transform: translateY(40px) scale(0.95); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1); 
+            }
+        }
+
+        .planet-name {
+            font-size: 32px;
+            font-weight: 900;
+            color: #4fc3f7;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 
+                0 0 20px rgba(79, 195, 247, 0.5),
+                0 0 40px rgba(79, 195, 247, 0.3);
+            position: relative;
+        }
+
+        .planet-name::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, #4fc3f7, #29b6f6);
+            border-radius: 2px;
+        }
+
+        .planet-detail {
+            margin-bottom: 12px;
+            font-size: 15px;
+            line-height: 1.7;
+            color: #e0e0e0;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            border-left: 3px solid rgba(79, 195, 247, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .planet-detail:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-left-color: #4fc3f7;
+            transform: translateX(5px);
+        }
+
+        .planet-detail strong {
+            color: #81c784;
+            font-weight: 700;
+        }
+
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 22px;
+            color: #4fc3f7;
+            text-align: center;
+            z-index: 2000;
+        }
+
+        .loading-spinner {
+            border: 4px solid rgba(79, 195, 247, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid #4fc3f7;
+            width: 80px;
+            height: 80px;
+            animation: spin 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+            margin: 0 auto 30px;
+            box-shadow: 
+                0 0 30px rgba(79, 195, 247, 0.4),
+                inset 0 0 20px rgba(79, 195, 247, 0.1);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.1); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+
+        #reset-btn {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 18px 36px;
+            background: linear-gradient(145deg, #ff5252, #d32f2f);
+            border: none;
+            border-radius: 30px;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            transition: all 0.3s ease;
+            box-shadow: 
+                0 6px 20px rgba(255, 82, 82, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            z-index: 1000;
+            overflow: hidden;
+        }
+
+        #reset-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        #reset-btn:hover::before {
+            left: 100%;
+        }
+
+        #reset-btn:hover {
+            background: linear-gradient(145deg, #ff6b6b, #e53935);
+            transform: translateX(-50%) translateY(-3px) scale(1.05);
+            box-shadow: 
+                0 10px 30px rgba(255, 82, 82, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        .stats-panel {
+            position: absolute;
+            bottom: 30px;
+            right: 20px;
+            background: linear-gradient(145deg, rgba(10, 15, 35, 0.9) 0%, rgba(26, 26, 46, 0.9) 100%);
+            border: 1px solid rgba(79, 195, 247, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            font-size: 13px;
+            backdrop-filter: blur(15px);
+            z-index: 1000;
+            min-width: 220px;
+        }
+
+        .stats-panel h3 {
+            color: #4fc3f7;
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-item {
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .stat-item:hover {
+            background: rgba(79, 195, 247, 0.1);
+            transform: translateX(5px);
+        }
+
+        .stat-label {
+            color: #81c784;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            color: #ffffff;
+            font-weight: 700;
+            font-family: 'Orbitron', monospace;
+        }
+
+        .current-speed-display {
+            background: rgba(79, 195, 247, 0.15);
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 15px 0;
+            border: 2px solid rgba(79, 195, 247, 0.3);
+        }
+
+        .current-speed-display span {
+            font-size: 24px;
+            font-weight: 900;
+            color: #4fc3f7;
+            text-shadow: 0 0 15px rgba(79, 195, 247, 0.5);
+            font-family: 'Orbitron', monospace;
+        }
+
+        /* Enhanced Mobile Responsive Design */
+        @media (max-width: 768px) {
+            #controls-panel {
+                top: 10px;
+                left: 10px;
+                right: 10px;
+                margin: 0 auto;
+                min-width: auto;
+                max-width: none;
+                padding: 20px;
+            }
+
+            #info-panel {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                right: auto;
+                max-width: 90vw;
+                max-height: 70vh;
+                z-index: 2000;
+            }
+
+            .speed-buttons {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .toggle-controls {
+                grid-template-columns: 1fr;
+            }
+
+            .planet-name {
+                font-size: 24px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #controls-panel {
+                padding: 15px;
+            }
+
+            .planet-name {
+                font-size: 20px;
+            }
+
+            .planet-detail {
+                font-size: 13px;
+            }
+
+            .stats-panel {
+                position: relative;
+                margin: 10px;
+                bottom: auto;
+                right: auto;
+            }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #4fc3f7, #29b6f6);
+            border-radius: 6px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #66d9ff, #4fc3f7);
+        }
+
+        /* Neon glow effects */
+        .glow-text {
+            text-shadow: 
+                0 0 10px currentColor,
+                0 0 20px currentColor,
+                0 0 30px currentColor;
+        }
+
+        /* Advanced animations */
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .float {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Tooltip styles */
+        .tooltip {
+            position: relative;
+        }
+
+        .tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 10000;
+        }
+
+        .tooltip:hover::after {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="canvas-container"></div>
+        
+        <div id="controls-panel">
+            <div class="control-group">
+                <label class="control-label glow-text">🚀 Simulation Speed</label>
+                <div class="speed-control">
+                    <span style="color: #81c784; font-weight: bold; font-size: 12px;">0.1x</span>
+                    <input type="range" id="speed-slider" min="0.1" max="10" value="1" step="0.1">
+                    <span style="color: #81c784; font-weight: bold; font-size: 12px;">10x</span>
+                </div>
+                <div class="speed-buttons">
+                    <button class="speed-btn tooltip" data-speed="0.1" data-tooltip="Slow motion">0.1x</button>
+                    <button class="speed-btn tooltip" data-speed="0.5" data-tooltip="Half speed">0.5x</button>
+                    <button class="speed-btn active tooltip" data-speed="1" data-tooltip="Real time">1x</button>
+                    <button class="speed-btn tooltip" data-speed="5" data-tooltip="Fast forward">5x</button>
+                    <button class="speed-btn tooltip" data-speed="10" data-tooltip="Ultra fast">10x</button>
+                </div>
+                <div class="current-speed-display">
+                    <span id="current-speed">1.0x</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label glow-text">👁️ Display Options</label>
+                <div class="toggle-controls">
+                    <button class="toggle-btn active tooltip" data-toggle="orbits" data-tooltip="Show/hide planetary orbits">🌌 Orbits</button>
+                    <button class="toggle-btn active tooltip" data-toggle="labels" data-tooltip="Toggle planet labels">🏷️ Labels</button>
+                    <button class="toggle-btn tooltip" data-toggle="atmosphere" data-tooltip="Show atmospheric effects">🌫️ Atmosphere</button>
+                    <button class="toggle-btn tooltip" data-toggle="asteroids" data-tooltip="Asteroid belt simulation">☄️ Asteroids</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label glow-text">📷 Camera Controls</label>
+                <div class="toggle-controls">
+                    <button class="toggle-btn tooltip" id="auto-rotate" data-tooltip="Automatic camera rotation">🔄 Auto Rotate</button>
+                    <button class="toggle-btn tooltip" id="follow-earth" data-tooltip="Follow Earth in orbit">🌍 Follow Earth</button>
+                    <button class="toggle-btn tooltip" id="tour-mode" data-tooltip="Guided tour of planets">🎯 Tour Mode</button>
+                    <button class="toggle-btn tooltip" id="fullscreen" data-tooltip="Enter fullscreen mode">📺 Fullscreen</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label glow-text">⏰ Time Controls</label>
+                <div class="toggle-controls">
+                    <button class="toggle-btn tooltip" id="pause-btn" data-tooltip="Pause/resume simulation">⏸️ Pause</button>
+                    <button class="toggle-btn tooltip" id="time-reversal" data-tooltip="Reverse time direction">⏪ Time Reverse</button>
+                    <button class="toggle-btn tooltip" id="reset-time" data-tooltip="Reset to current date">🕐 Reset Time</button>
+                    <button class="toggle-btn tooltip" id="century-view" data-tooltip="View 100 years">📅 Century</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="info-panel">
+            <div id="loading">
+                <div class="loading-spinner"></div>
+                <div>🌌 Loading Solar System...</div>
+                <div style="margin-top: 15px; font-size: 14px; opacity: 0.8;">
+                    Initializing planetary orbits<br>
+                    <span class="pulse">⚡ Powered by real astronomical data</span>
+                </div>
+            </div>
+            
+            <div class="planet-info" id="sun-info">
+                <div class="planet-name glow-text float">☀️ Sun</div>
+                <div class="planet-detail"><strong>Classification:</strong> G-type main-sequence star (Yellow Dwarf)</div>
+                <div class="planet-detail"><strong>Mass:</strong> 1.989 × 10³⁰ kg (333,000 × Earth)</div>
+                <div class="planet-detail"><strong>Diameter:</strong> 1,392,700 km (109 × Earth)</div>
+                <div class="planet-detail"><strong>Surface Temperature:</strong> 5,778 K (5,505°C)</div>
+                <div class="planet-detail"><strong>Core Temperature:</strong> ~15,000,000 K</div>
+                <div class="planet-detail"><strong>Age:</strong> ~4.6 billion years</div>
+                <div class="planet-detail"><strong>Composition:</strong> 73% Hydrogen, 25% Helium, 2% heavy elements</div>
+                <div class="planet-detail"><strong>Luminosity:</strong> 3.828 × 10²⁶ W</div>
+                <div class="planet-detail"><strong>Gravity:</strong> 274 m/s² (28× Earth gravity)</div>
+                <div class="planet-detail"><strong>Rotation:</strong> 25-35 days at equator</div>
+            </div>
+
+            <div class="planet-info" id="mercury-info">
+                <div class="planet-name glow-text float">Mercury</div>
+                <div class="planet-detail"><strong>Distance from Sun:</strong> 57.9 million km (0.39 AU)</div>
+                <div class="planet-detail"><strong>Diameter:</strong> 4,879 km (0.38× Earth)</div>
+                <div class="planet-detail"><strong>Orbital Period:</strong> 88 Earth days</div>
+                <div class="planet-detail"><strong>Day Length:</strong> 176 Earth days (3:2 resonance)</div>
+                <div class="planet-detail"><strong>Moons:</strong> 0</div>
+                <div class="planet-detail"><strong>Atmosphere:</strong> Extremely thin (Sodium, Oxygen, Helium)</div>
+                <div class="planet-detail"><strong>Surface Temperature:</strong> 440K (167°C) day, 100K (-173°C) night</div>
+                <div class="planet-detail"><strong>Classification:</strong> Terrestrial Planet</div>
+                <div class="planet-detail"><strong>Notable Feature:</strong> Largest temperature variation in solar system</div>
+            </div>
+
+            <div class="planet-info" id="venus-info">
+                <div class="planet-name glow-text float">Venus</div>
+                <div class="planet-detail"><strong>Distance from Sun:</strong> 108.2 million km (0.72 AU)</div>
+                <div class="planet-detail"><strong>Diameter:</strong> 12,104 km (0.95× Earth)</div>
+                <div class="planet-detail"><strong>Orbital Period:</strong> 225 Earth days</div>
+                <div class="planet-detail"><strong>Day Length:</strong> 243 Earth days (retrograde rotation)</div>
+                <div class="planet-detail"><strong>Moons:</strong> 0</div>
+                <div class="planet-detail"><strong>Atmosphere:</strong> 96.5% CO₂, 3.5% N₂ (92× Earth pressure)</div>
+                <div class="planet-detail"><strong>Surface Temperature:</strong> 737K (464°C)</div>
+                <div class="planet-detail"><strong>Surface Pressure:</strong> 92× Earth's atmospheric pressure</div>
+                <div class="planet-detail"><strong>Nickname:</strong> "Earth's twin" with opposite conditions</div>
+            </div>
+
+            <div class="planet-info" id="earth-info">
+                <div class="planet-name glow-text float">🌍 Earth</div>
+                <div class="planet-detail"><strong>Distance from Sun:</strong> 149.6 million km (1.00 AU)</div>
+                <div class="planet-detail"><strong>Diameter:</strong> 12,756 km</div>
+                <div class="planet-detail"><strong>Orbital Period:</strong> 365.25 days</div>
+                <div class="planet-detail"><strong>Day Length:</strong> 24 hours</div>
+                <div class="planet-detail"><strong>Moons:</strong> 1 (Moon - 3,474 km diameter)</div>
+                <div class="planet-detail"><strong>Atmosphere:</strong> 78% N₂, 21% O₂, 1% other gases</div>
+                <div class="planet-detail"><strong>Water Coverage:</strong> 71% of surface</div>
+                <div class="planet-detail"><strong>Population:</strong> ~8 billion (2023)</div>
+                <div class="planet-detail"><strong>Unique Feature:</strong> Only known planet with life</div>
+                <div class="planet-detail"><strong>Age:</strong> 4.54 billion years</div>
+            </div>
+
+            <div class="planet-info" id="mars-info">
+                <div class="planet-name glow-text float">Mars</div>
+                <div class="planet-detail"><strong>Distance from Sun:</strong> 227.9 million km (1.52 AU)</div>
+                <div class="planet-detail"><strong>Diameter:</strong> 6,792 km (0.53× Earth)</div>
+                <div class="planet-detail"><strong>Orbital Period:</strong> 687 Earth days (1.88 years)</div>
+                <div class="planet-detail"><strong>Day Length:</strong> 24.6 hours</div>
+                <div class="planet-detail"><strong>Moons:</strong> 2 (Phobos, Deimos)</div>
+                <div class="planet-detail"><strong>Atmosphere:</strong> 95% CO₂, 3% N₂, 2% Ar</div>
+                <div class="planet-detail"><strong>Surface Temperature:</strong> 210K (-63°C) average</div>
+                <div class="planet-detail"><strong>Notable Feature:</strong> Olympus Mons (largest volcano in solar system)</div>
+                <div class="planet-detail"><strong>Exploration:</strong> Multiple rovers currently active</div>
+            </div>
+
+            <div class="planet-info" id="jupiter-info">
+                <div class="planet-name glow-text float">Jupiter</div>
+                <div class="planet-detail"><strong>Distance from Sun:</strong> 778.5 million km (5.20 AU)</div>
+                <div class="planet-detail"><strong>Diameter:</strong> 142,984 km (11.2× Earth)</div>
+                <div class="planet-detail"><strong>Orbital Period:</strong> 11.86 Earth years</div>
+                <div class="planet-detail"><strong>Day Length:</strong> 9.9 hours (fastest rotation)</div>
+                <div class="planet-detail"><strong>Moons:</strong> 79+ (4 Galilean moons)</div>
+                <div class="planet-detail"><strong>Atmosphere:</strong> 89% H₂, 10% He, 1% other compounds</div>
+                <div class="planet-detail"><strong>Great Red Spot:</strong> Storm larger than Earth (300+ years)</div>
+                <div class="planet-detail"><strong>Classification:</strong> Gas Giant</div>
+                <div class="planet-detail"><strong>Mass:</strong> 2.5× all other planets combined</div>
+            </div>
+
+            <div class="planet-info" id="saturn-info">
+                <div class="planet-name glow-text float">Saturn</div>
+                <div class="planet-detail"><strong>Distance from Sun:</strong> 1.43 billion km (9.58 AU)</div>
+                <div class="planet-detail"><strong>Diameter:</strong> 120,536 km (9.4× Earth)</div>
+                <div class="planet-detail"><strong>Orbital Period:</strong> 29.45 Earth years</div>
+                <div class="planet-detail"><strong>Day Length:</strong> 10.7 hours</div>
+                <div class="planet-detail"><strong>Moons:</strong> 82+ (Titan, Enceladus notable)</div>
+                <div class="planet-detail"><strong>Atmosphere:</strong> 96% H₂, 3% He, 1% other compounds</div>
+                <div class="planet-detail"><strong>Rings:</strong> Ice and rock particles (10m-10km size)</div>
+                <div class="planet-detail"><strong>Density:</strong> Less than water (0.687 g/cm³)</div>
+                <div class="planet-detail"><strong>Unique Feature:</strong> Beautiful ring system visible from Earth</div>
+            </div>
+
+            <div class="planet-info" id="uranus-info">
+                <div class="planet-name glow-text float">Uranus</div>
+                <div class="planet-detail"><strong>Distance from Sun:</strong> 2.87 billion km (19.2 AU)</div>
+                <div class="planet-detail"><strong>Diameter:</strong> 51,118 km (4.0× Earth)</div>
+                <div class="planet-detail"><strong>Orbital Period:</strong> 84 Earth years</div>
+                <div class="planet-detail"><strong>Day Length:</strong> 17.2 hours</div>
+                <div class="planet-detail"><strong>Moons:</strong> 27+</div>
+                <div class="planet-detail"><strong>Atmosphere:</strong> 83% H₂, 15% He, 2% CH₄</div>
+                <div class="planet-detail"><strong>Axial Tilt:</strong> 98° (rotates on its side)</div>
+                <div class="planet-detail"><strong>Temperature:</strong> 76K (-197°C)</div>
+                <div class="planet-detail"><strong>Discovery:</strong> 1781 by William Herschel</div>
+            </div>
+
+            <div class="planet-info" id="neptune-info">
+                <div class="planet-name glow-text float">Neptune</div>
+                <div class="planet-detail"><strong>Distance from Sun:</strong> 4.50 billion km (30.1 AU)</div>
+                <div class="planet-detail"><strong>Diameter:</strong> 49,528 km (3.9× Earth)</div>
+                <div class="planet-detail"><strong>Orbital Period:</strong> 164.8 Earth years</div>
+                <div class="planet-detail"><strong>Day Length:</strong> 16.1 hours</div>
+                <div class="planet-detail"><strong>Moons:</strong> 14+</div>
+                <div class="planet-detail"><strong>Atmosphere:</strong> 80% H₂, 19% He, 1% CH₄</div>
+                <div class="planet-detail"><strong>Wind Speed:</strong> Up to 2,100 km/h (fastest in solar system)</div>
+                <div class="planet-detail"><strong>Discovery:</strong> 1846 (first predicted planet)</div>
+                <div class="planet-detail"><strong>Notable Feature:</strong> Strong magnetic field and weather</div>
+            </div>
+        </div>
+
+        <div class="stats-panel">
+            <h3>🌟 System Stats</h3>
+            <div class="stat-item">
+                <span class="stat-label">Planets:</span>
+                <span class="stat-value" id="planet-count">8</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Moons:</span>
+                <span class="stat-value" id="moon-count">200+</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Asteroids:</span>
+                <span class="stat-value" id="asteroid-count">1M+</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Simulation Speed:</span>
+                <span class="stat-value" id="stats-speed">1.0x</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Frame Rate:</span>
+                <span class="stat-value" id="fps">60 FPS</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Active Planets:</span>
+                <span class="stat-value" id="active-planets">8</span>
+            </div>
+        </div>
+
+        <button id="reset-btn">🔄 Reset View</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="solar-system.js"></script>
+</body>
+</html>
